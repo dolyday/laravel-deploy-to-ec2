@@ -1,0 +1,118 @@
+name: Deploy Laravel to EC2
+
+on:
+  workflow_dispatch: 
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform/**'
+      - 'ansible/**'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '**.php'
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+            php-version: 8.2
+            extensions: mbstring, pdo, mysql
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+            path: vendor
+            key: composer-${{ hashFiles('**/composer.lock') }}
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare environment
+        run: |
+            cp .env.example .env
+            php artisan key:generate
+
+  test:
+    name: Test
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+            php-version: 8.2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Run tests
+        run: php artisan test
+    
+  deploy:
+    name: Deploy
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve
+
+      - name: Get public IP
+        id: tf-output
+        working-directory: terraform
+        run: echo "EC2_HOST=$(terraform output -raw instance_ip)" >> $GITHUB_ENV
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
+          chmod 400 ~/.ssh/key.pem
+          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create inventory file
+        run: |
+            cat <<EOF > inventory.ini
+            [web]
+            ${{ env.EC2_HOST }}
+
+            [web:vars]
+            ansible_user=ubuntu
+            ansible_ssh_private_key_file=~/.ssh/key.pem
+            EOF
+    
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible
+
+
+      - name: Run playbook
+        run: ansible-playbook -i inventory.ini ansible/main.yml
