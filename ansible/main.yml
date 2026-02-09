@@ -42,7 +42,7 @@
 
     - name: Clone project
       git:
-        repo: 'https://github.com/RayanMaraval/laravel-deploy-to-ec2.git'
+        repo: 'https://github.com/dolyday/laravel-deploy-to-ec2.git'
         dest: /home/ubuntu/laravel
         version: main
         force: yes
