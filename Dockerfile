@@ -21,7 +21,6 @@ WORKDIR /var/www/html
 # Copy app files
 COPY app /var/www/html
 
-
 # Copy existing apache config
 COPY ./apache/vhost.conf /etc/apache2/sites-available/000-default.conf
 
