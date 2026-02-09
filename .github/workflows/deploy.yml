@@ -47,14 +47,6 @@ jobs:
             cp .env.example .env
             php artisan key:generate
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-            name: laravel-build
-            path: |
-                app/.env
-                app/vendor
-
   test:
     name: Test
     needs: build
@@ -69,11 +61,15 @@ jobs:
         with:
             php-version: 8.2
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-            name: laravel-build
-            path: app/
+      - name: Install dependencies
+        working-directory: app
+        run: composer install --no-interaction --prefer-dist
+    
+      - name: Prepare environment
+        working-directory: app
+        run: |
+            cp .env.example .env
+            php artisan key:generate
 
       - name: Run tests
         working-directory: app
