@@ -1,44 +1,34 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: laravel-app
-    ports:
-      - "80:80"
-    depends_on:
-      - mysql
-    networks:
-      - laravel
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: laravel-app
+        ports:
+            - "80:80"
+        depends_on:
+            - mysql
+        networks:
+            - laravel-network
 
-  mysql:
-    image: mysql:8.0
-    container_name: laravel-mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: laravel
-      MYSQL_ROOT_PASSWORD: root
-    ports:
-      - "3306:3306"
-    networks:
-      - laravel
-  
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: laravel-pma
-    restart: always
-    ports:
-      - "8080:80"
-    environment:
-      PMA_HOST: mysql
-      PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: root
-    depends_on:
-      - mysql
-    networks:
-      - laravel
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: laravel-pma
+        restart: always
+        ports:
+            - "8080:80"
+        environment:
+            PMA_HOST: mysql
+            PMA_PORT: 3306
+            MYSQL_ROOT_PASSWORD: root
+        depends_on:
+            - mysql
+        networks:
+            - laravel-network
+
 
 networks:
-  laravel:
-    name: laravel
-    driver: bridge
+    laravel-network:
+        name: laravel-network
+        driver: bridge
