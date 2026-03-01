@@ -17,9 +17,11 @@ services:
         ports:
             - "8080:80"
         environment:
-            PMA_HOST: mysql
-            PMA_PORT: 3306
             MYSQL_ROOT_PASSWORD: root
+            PMA_HOST: "{{ lookup('env','DB_HOST') }}"
+            PMA_PORT: "{{ lookup('env','DB_PORT') }}"
+            PMA_USER: "{{ lookup('env','DB_USERNAME') }}"
+            PMA_PASSWORD: "{{ lookup('env','DB_PASSWORD') }}"
         networks:
             - laravel-network
 
