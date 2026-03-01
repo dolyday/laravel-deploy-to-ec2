@@ -126,7 +126,7 @@ jobs:
 
             - name: Run playbook
               env:
-                DB_HOST: ${{ env.DB_HOST }}
+                DB_HOST: ${{ env.RDS_ENDPOINT }}
                 DB_PORT: ${{ secrets.DB_PORT }}
                 DB_DATABASE: ${{ secrets.DB_DATABASE }}
                 DB_USERNAME: ${{ secrets.DB_USERNAME }}
