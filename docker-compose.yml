@@ -16,12 +16,8 @@ services:
         restart: always
         ports:
             - "8080:80"
-        environment:
-            MYSQL_ROOT_PASSWORD: root
-            PMA_HOST: "{{ lookup('env','DB_HOST') }}"
-            PMA_PORT: "{{ lookup('env','DB_PORT') }}"
-            PMA_USER: "{{ lookup('env','DB_USERNAME') }}"
-            PMA_PASSWORD: "{{ lookup('env','DB_PASSWORD') }}"
+        env_file:
+            - .env
         networks:
             - laravel-network
 
