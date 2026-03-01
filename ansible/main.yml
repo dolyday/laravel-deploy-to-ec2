@@ -17,15 +17,15 @@
 
       - name: Install dependencies
         apt:
-            name:
-                - git
-            state: present
+          name:
+              - git
+          state: present
 
 
       - name: Add Docker GPG key
         apt_key:
-            url: https://download.docker.com/linux/ubuntu/gpg
-            state: present
+          url: https://download.docker.com/linux/ubuntu/gpg
+          state: present
 
 
       - name: Add Docker APT repo
@@ -85,7 +85,7 @@
       - name: Build Docker images
         command: docker compose build
         args:
-        chdir: /home/ubuntu/laravel-app
+          chdir: /home/ubuntu/laravel-app
 
 
       - name: Run Docker containers
