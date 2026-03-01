@@ -1,94 +1,94 @@
-name: Setup project with Docker
-hosts: web
-become: yes
+- name: Setup project with Docker
+  hosts: web
+  become: yes
 
-vars:
-    db_host: "{{ lookup('env', 'DB_HOST') }}"
-    db_port: "{{ lookup('env', 'DB_PORT') }}"
-    db_name: "{{ lookup('env', 'DB_DATABASE') }}"
-    db_username: "{{ lookup('env', 'DB_USERNAME') }}"
-    db_password: "{{ lookup('env', 'DB_PASSWORD') }}"
+  vars:
+      db_host: "{{ lookup('env', 'DB_HOST') }}"
+      db_port: "{{ lookup('env', 'DB_PORT') }}"
+      db_name: "{{ lookup('env', 'DB_DATABASE') }}"
+      db_username: "{{ lookup('env', 'DB_USERNAME') }}"
+      db_password: "{{ lookup('env', 'DB_PASSWORD') }}"
 
-tasks:
-    - name: Update APT
-      apt:
-        update_cache: yes
+  tasks:
+      - name: Update APT
+        apt:
+          update_cache: yes
 
 
-    - name: Install dependencies
-      apt:
-          name:
-              - git
+      - name: Install dependencies
+        apt:
+            name:
+                - git
+            state: present
+
+
+      - name: Add Docker GPG key
+        apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            state: present
+
+
+      - name: Add Docker APT repo
+        apt_repository:
+          repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
           state: present
 
 
-    - name: Add Docker GPG key
-      apt_key:
-          url: https://download.docker.com/linux/ubuntu/gpg
+      - name: Install Docker
+        apt:
+          name: docker-ce
           state: present
 
 
-    - name: Add Docker APT repo
-      apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-        state: present
+      - name: Add ubuntu to docker group
+        user:
+          name: ubuntu
+          groups: docker
+          append: yes
 
 
-    - name: Install Docker
-      apt:
-        name: docker-ce
-        state: present
+      - name: Start Docker
+        systemd:
+          name: docker
+          state: started
+          enabled: yes
 
 
-    - name: Add ubuntu to docker group
-      user:
-        name: ubuntu
-        groups: docker
-        append: yes
+      - name: Clone project
+        git:
+          repo: 'https://github.com/dolyday/laravel-deploy-to-ec2.git'
+          dest: /home/ubuntu/laravel-app
+          version: main
+          force: yes
 
 
-    - name: Start Docker
-      systemd:
-        name: docker
-        state: started
-        enabled: yes
+      - name: Create .env file
+        copy:
+          dest: /home/ubuntu/laravel-app/.env
+          content: |
+            APP_NAME=Laravel
+            APP_ENV=production
+            APP_KEY=
+            APP_DEBUG=false
+            APP_URL=http://localhost
+            DB_CONNECTION=mysql
+            DB_HOST={{ db_host }}
+            DB_PORT={{ db_port }}
+            DB_DATABASE={{ db_name }}
+            DB_USERNAME={{ db_username }}
+            DB_PASSWORD={{ db_password }}
+            CACHE_DRIVER=file
+            SESSION_DRIVER=file
+            QUEUE_DRIVER=database
 
 
-    - name: Clone project
-      git:
-        repo: 'https://github.com/RayanMaraval/laravel-deploy-to-ec2.git'
-        dest: /home/ubuntu/laravel-app
-        version: main
-        force: yes
-
-
-    - name: Create .env file
-      copy:
-        dest: /home/ubuntu/laravel-app/.env
-        content: |
-          APP_NAME=Laravel
-          APP_ENV=production
-          APP_KEY=
-          APP_DEBUG=false
-          APP_URL=http://localhost
-          DB_CONNECTION=mysql
-          DB_HOST={{ db_host }}
-          DB_PORT={{ db_port }}
-          DB_DATABASE={{ db_name }}
-          DB_USERNAME={{ db_username }}
-          DB_PASSWORD={{ db_password }}
-          CACHE_DRIVER=file
-          SESSION_DRIVER=file
-          QUEUE_DRIVER=database
-
-
-    - name: Build Docker images
-      command: docker compose build
-      args:
-      chdir: /home/ubuntu/laravel-app
-
-
-    - name: Run Docker containers
-      command: docker compose up -d
-      args:
+      - name: Build Docker images
+        command: docker compose build
+        args:
         chdir: /home/ubuntu/laravel-app
+
+
+      - name: Run Docker containers
+        command: docker compose up -d
+        args:
+          chdir: /home/ubuntu/laravel-app
