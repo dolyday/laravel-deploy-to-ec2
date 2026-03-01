@@ -1,127 +1,134 @@
-name: Deploy Laravel to EC2
+name: Deploy Laravel App to EC2
 
 on:
-  workflow_dispatch: 
-  push:
-    branches:
-      - main
-    paths:
-      - 'terraform/**'
-      - 'ansible/**'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - '**.php'
+    workflow_dispatch: 
+    push:
+        branches:
+            - main
+        paths:
+            - 'terraform/**'
+            - 'ansible/**'
+            - 'Dockerfile'
+            - 'docker-compose.yml'
+            - '**.php'
 
 env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
 
 jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
+    build:
+        name: Build
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-            php-version: 8.2
-            extensions: mbstring, pdo, mysql
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                php-version: 8.2
+                extensions: mbstring, pdo, mysql
 
-      - name: Cache composer dependencies
-        uses: actions/cache@v3
-        with:
-            path: app/vendor
-            key: composer-${{ hashFiles('**/composer.lock') }}
+            - name: Cache Composer dependencies
+              uses: actions/cache@v3
+              with:
+                path: app/vendor
+                key: composer-${{ hashFiles('**/composer.lock') }}
 
-      - name: Install dependencies
-        working-directory: app
-        run: composer install --no-interaction --prefer-dist
+            - name: Install dependencies
+              working-directory: app
+              run: composer install --no-interaction --prefer-dist
 
-      - name: Prepare environment
-        working-directory: app
-        run: |
-            cp .env.example .env
-            php artisan key:generate
+            - name: Prepare environment
+              working-directory: app
+              run: |
+                cp .env.example .env
+                php artisan key:generate
 
-  test:
-    name: Test
-    needs: build
-    runs-on: ubuntu-latest
+    test:
+        name: Test
+        needs: build
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-            php-version: 8.2
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                php-version: 8.2
 
-      - name: Install dependencies
-        working-directory: app
-        run: composer install --no-interaction --prefer-dist
+            - name: Install dependencies
+              working-directory: app
+              run: composer install --no-interaction --prefer-dist
+        
+            - name: Prepare environment
+              working-directory: app
+              run: |
+                cp .env.example .env
+                php artisan key:generate
+
+            - name: Run tests
+              working-directory: app
+              run: php artisan test
     
-      - name: Prepare environment
-        working-directory: app
-        run: |
-            cp .env.example .env
-            php artisan key:generate
+    deploy:
+        name: Deploy
+        needs: test
+        runs-on: ubuntu-latest
 
-      - name: Run tests
-        working-directory: app
-        run: php artisan test
-    
-  deploy:
-    name: Deploy
-    needs: test
-    runs-on: ubuntu-latest
+        steps:
+            - name: Checkout source code
+              uses: actions/checkout@v4
 
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+            - name: Terraform init
+              working-directory: terraform
+              run: terraform init
 
-      - name: Terraform Init
-        working-directory: terraform
-        run: terraform init
+            - name: Terraform apply
+              working-directory: terraform
+              run: terraform apply -auto-approve
 
-      - name: Terraform Apply
-        working-directory: terraform
-        run: terraform apply -auto-approve
+            - name: Export EC2 IP and RDS endpoint
+              id: tf-output
+              working-directory: terraform
+              run: |
+                echo "EC2_HOST=$(terraform output -raw instance_ip)" >> $GITHUB_ENV
+                echo "RDS_ENDPOINT=$(terraform output -raw rds_endpoint)" >> $GITHUB_ENV
+            - name: Setup SSH
+              run: |
+                mkdir -p ~/.ssh
+                echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
+                chmod 400 ~/.ssh/key.pem
+                ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Get public IP
-        id: tf-output
-        working-directory: terraform
-        run: echo "EC2_HOST=$(terraform output -raw instance_ip)" >> $GITHUB_ENV
+            - name: Create inventory file
+              run: |
+                cat <<EOF > inventory.ini
+                [web]
+                ${{ env.EC2_HOST }}
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/key.pem
-          chmod 400 ~/.ssh/key.pem
-          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts
+                [web:vars]
+                ansible_user=ubuntu
+                ansible_ssh_private_key_file=~/.ssh/key.pem
+                EOF
+            
+            - name: Install Ansible
+              run: |
+                sudo apt update
+                sudo apt install -y ansible
 
-      - name: Create inventory file
-        run: |
-            cat <<EOF > inventory.ini
-            [web]
-            ${{ env.EC2_HOST }}
-
-            [web:vars]
-            ansible_user=ubuntu
-            ansible_ssh_private_key_file=~/.ssh/key.pem
-            EOF
-    
-      - name: Install Ansible
-        run: |
-          sudo apt update
-          sudo apt install -y ansible
-
-      - name: Run playbook
-        run: ansible-playbook -i inventory.ini ansible/main.yml
+            - name: Run playbook
+              env:
+                DB_HOST: ${{ env.DB_HOST }}
+                DB_PORT: ${{ secrets.DB_PORT }}
+                DB_DATABASE: ${{ secrets.DB_DATABASE }}
+                DB_USERNAME: ${{ secrets.DB_USERNAME }}
+                DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+              run: ansible-playbook -i inventory.ini ansible/main.yml
