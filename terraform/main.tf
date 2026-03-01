@@ -16,7 +16,7 @@ resource "aws_instance" "laravel_server" {
 data "aws_security_group" "allow_http_ssh" {
   filter {
     name   = "group-name"
-    values = ["allow_http_ssh"]
+    values = ["allow-http-ssh"]
   }
 
   filter {
