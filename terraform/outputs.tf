@@ -1,5 +1,5 @@
 output "instance_ip" {
-  value = aws_instance.laravel_server.public_ip
+  value = aws_instance.laravel_app_instance.public_ip
 }
 
 output "rds_endpoint" {
