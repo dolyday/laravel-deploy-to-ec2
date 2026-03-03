@@ -19,7 +19,7 @@ resource "aws_subnet" "rds_subnet_2" {
 }
 
 resource "aws_db_subnet_group" "rds_subnet_group" {
-    name = "laravel-rds-subnet-group"
+    name = "rds-subnet-group"
 
     subnet_ids = [
         aws_subnet.rds_subnet_1.id,
@@ -27,7 +27,7 @@ resource "aws_db_subnet_group" "rds_subnet_group" {
     ]
 
     tags = {
-        Name = "Laravel RDS subnet group"
+        Name = "RDS subnet group"
     }
 }
 
@@ -52,7 +52,7 @@ resource "aws_security_group" "rds_sg" {
     }
 
     tags = {
-        Name = "Laravel RDS SG"
+        Name = "RDS SG"
     }
 }
 
