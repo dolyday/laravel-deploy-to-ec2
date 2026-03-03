@@ -19,6 +19,14 @@ resource "aws_security_group" "ec2_sg" {
         cidr_blocks = ["0.0.0.0/0"]
     }
 
+    ingress {
+        description = "Allow Port 8080"
+        from_port   = 8080
+        to_port     = 8080
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
     egress {
         from_port   = 0
         to_port     = 0
@@ -27,7 +35,7 @@ resource "aws_security_group" "ec2_sg" {
     }
 
     tags = {
-        Name = "EC2 SG"
+        Name = "EC2 security group"
     }
 }
 
