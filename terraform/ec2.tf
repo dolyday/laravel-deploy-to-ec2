@@ -44,3 +44,4 @@ resource "aws_instance" "laravel_app_instance" {
     tags = {
         Name = "Deploy Laravel App to EC2"
     }
+}
