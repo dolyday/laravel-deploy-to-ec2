@@ -56,7 +56,7 @@
 
       - name: Clone project
         git:
-          repo: 'https://github.com/dolyday/laravel-deploy-to-ec2.git'
+          repo: 'https://github.com/RayanMaraval/deploy-laravel-app-to-ec2.git'
           dest: /home/ubuntu/laravel-app
           version: main
           force: yes
@@ -89,6 +89,11 @@
 
 
       - name: Run Docker containers
-        command: docker compose up -d
+        command: >
+          DB_HOST={{ db_host }}
+          DB_PORT={{ db_port }}
+          DB_USERNAME={{ db_username }}
+          DB_PASSWORD={{ db_password }}
+          docker compose up -d
         args:
           chdir: /home/ubuntu/laravel-app
