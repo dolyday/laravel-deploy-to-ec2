@@ -93,7 +93,5 @@
         environment:
           DB_HOST: "{{ db_host }}"
           DB_PORT: "{{ db_port }}"
-          DB_USERNAME: "{{ db_username }}"
-          DB_PASSWORD: "{{ db_password }}"
         args:
           chdir: /home/ubuntu/laravel-app
