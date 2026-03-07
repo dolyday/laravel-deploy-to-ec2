@@ -56,7 +56,7 @@
 
       - name: Clone project
         git:
-          repo: 'https://github.com/dolyday/laravel-deploy-to-ec2.git'
+          repo: 'https://github.com/RayanMaraval/deploy-laravel-app-to-ec2.git'
           dest: /home/ubuntu/laravel-app
           version: main
           force: yes
@@ -93,5 +93,11 @@
         environment:
           DB_HOST: "{{ db_host }}"
           DB_PORT: "{{ db_port }}"
+        args:
+          chdir: /home/ubuntu/laravel-app
+
+
+      - name: Run app migrations
+        shell: docker compose exec -T app php artisan migrate --force
         args:
           chdir: /home/ubuntu/laravel-app
