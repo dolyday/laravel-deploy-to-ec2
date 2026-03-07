@@ -95,15 +95,3 @@
         DB_PORT: "{{ db_port }}"
       args:
         chdir: /home/ubuntu/laravel-app
-
-
-    - name: Run app migrations
-      command: docker compose exec -T app php artisan migrate --force
-      environment:
-        DB_HOST: "{{ db_host }}"
-        DB_PORT: "{{ db_port }}"
-        DB_DATABASE: "{{ db_name }}"
-        DB_USERNAME: "{{ db_username }}"
-        DB_PASSWORD: "{{ db_password }}"
-      args:
-        chdir: /home/ubuntu/laravel-app
