@@ -19,14 +19,6 @@ composer install --no-interaction --prefer-dist --optimize-autoloader
 echo "🔑 Generating app key..."
 php artisan key:generate
 
-until php -r "require 'vendor/autoload.php'; try { \$capsule = new Illuminate\Database\Capsule\Manager; \$capsule->getConnection()->getPdo(); echo 'DB OK'; } catch (Exception \$e) { exit(1); }"; do
-    echo "Waiting for database..."
-    sleep 5
-done
-
-# Run migrations
-php artisan migrate --force
-
 echo "🧹 Clearing and caching config and routes..."
 php artisan config:clear
 php artisan config:cache
