@@ -17,11 +17,6 @@ composer install --no-interaction --prefer-dist --optimize-autoloader
 echo "🔑 Generating app key..."
 php artisan key:generate
 
-until php artisan migrate --force; do
-  echo "Database not ready yet. Retrying in 5 seconds..."
-  sleep 5
-done
-
 echo "🧹 Clearing and caching config and routes..."
 php artisan config:clear
 php artisan config:cache
