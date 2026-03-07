@@ -19,7 +19,7 @@ composer install --no-interaction --prefer-dist --optimize-autoloader
 echo "🔑 Generating app key..."
 php artisan key:generate
 
-until mysql -h "$DB_HOST" -u "$DB_USERNAME" -p"$DB_PASSWORD" -e "select 1"; do
+until php -r "require 'vendor/autoload.php'; try { \$capsule = new Illuminate\Database\Capsule\Manager; \$capsule->getConnection()->getPdo(); echo 'DB OK'; } catch (Exception \$e) { exit(1); }"; do
     echo "Waiting for database..."
     sleep 5
 done
